@@ -1,0 +1,82 @@
+############################## RestTemplate To Call Another Service ################
+
+      Map<String, String> uriVariables = new HashMap<>();
+			uriVariables.put("from", from);
+			uriVariables.put("to", to);
+      
+			ResponseEntity<CurrencyConversionBean> responseEntity = new RestTemplate().getForEntity(
+					"http://localhost:8000/currency-exchange/from/{from}/to/{to}", CurrencyConversionBean.class,
+					uriVariables);
+          
+			CurrencyConversionBean response = responseEntity.getBody();
+			return new CurrencyConversionBean(response.getId(), from, to, response.getConversionMultiple(), quantity,
+			quantity.multiply(response.getConversionMultiple()), response.getPort());
+      
+      
+ ################################# Feign To Call Another Service ##################
+ 1- Add below dependency
+ 
+ <!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-feign -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-feign</artifactId>
+			<version>1.4.6.RELEASE</version>
+		</dependency>
+    
+2- Enable Feign Client in Your Main SpringBoot class
+  
+@SpringBootApplication
+@EnableFeignClients("com.vasu.currencyconversionservice")
+public class CurrencyConversionServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(CurrencyConversionServiceApplication.class, args);
+	}
+}
+
+3-  Create an Interface for Feign Proxy
+
+@Component
+@FeignClient(name = "currency-exchange-service", url = "http://localhost:8000")
+public interface CurrencyExchangeServiceProxy {
+	@GetMapping("/currency-exchange/from/{from}/to/{to}")
+	public CurrencyConversionBean retriveExchangeValue(@PathVariable("from") String from,
+			@PathVariable("to") String to);
+}
+
+4- create instance of This Proxy Interface In yOur Controller and call His methods..
+
+@Autowired
+private CurrencyExchangeServiceProxy proxy;
+
+CurrencyConversionBean response = proxy.retriveExchangeValue(from, to);
+			return new CurrencyConversionBean(response.getId(), from, to, response.getConversionMultiple(), quantity,
+					quantity.multiply(response.getConversionMultiple()), response.getPort());
+          
+          
+          
+######################### Enable Client Side Load Balancing Using Ribbon #################
+
+1- Add below dependency
+
+<!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-ribbon -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-ribbon</artifactId>
+			<version>1.4.6.RELEASE</version>
+		</dependency>
+    
+ 2-  Enable Ribbon in your Feign Interface
+ 
+@Component
+@FeignClient(name = "currency-exchange-service")      //don't use url with ribbon client load balancing
+@RibbonClient(name = "currency-exchange-service")
+public interface CurrencyExchangeServiceProxy {
+	@GetMapping("/currency-exchange/from/{from}/to/{to}")
+	public CurrencyConversionBean retriveExchangeValue(@PathVariable("from") String from,
+			@PathVariable("to") String to);
+}
+
+3- Run two instance of currency-exchange-service using below steps
+   Right Click on Project -> Run As -> Run Configuration -> Java Application -> 
+   Right Click on your app name -> choose Duplicate -> Go to Argument and write -> -Dserver.port=8081
