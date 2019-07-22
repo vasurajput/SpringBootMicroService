@@ -80,3 +80,8 @@ public interface CurrencyExchangeServiceProxy {
 3- Run two instance of currency-exchange-service using below steps
    Right Click on Project -> Run As -> Run Configuration -> Java Application -> 
    Right Click on your app name -> choose Duplicate -> Go to Argument and write -> -Dserver.port=8081
+   
+ 4- Go to Properties file and add below lines
+ {name_of_service.ribbon.listOfServers}
+ currency-exchange-service.ribbon.listOfServers=http://localhost:8000,http://localhost:8001
+
